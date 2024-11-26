@@ -1,0 +1,88 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\francis.chemorion\\Desktop\\mwisho kabisa\\CascadeProjects\\personal-website\\ClaudeVSExtension.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\francis.chemorion\\Desktop\\mwisho kabisa\\CascadeProjects\\personal-website\\ClaudeVSExtension.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\francis.chemorion\\Desktop\\mwisho kabisa\\CascadeProjects\\personal-website\\ClaudeVSExtension.csproj",
+        "projectName": "ClaudeVSExtension",
+        "projectPath": "C:\\Users\\francis.chemorion\\Desktop\\mwisho kabisa\\CascadeProjects\\personal-website\\ClaudeVSExtension.csproj",
+        "packagesPath": "C:\\Users\\francis.chemorion\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\francis.chemorion\\Desktop\\mwisho kabisa\\CascadeProjects\\personal-website\\obj\\",
+        "projectStyle": "PackageReference",
+        "skipContentFileWrite": true,
+        "configFilePaths": [
+          "C:\\Users\\francis.chemorion\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net472"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net472": {
+            "projectReferences": {}
+          }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net472": {
+          "dependencies": {
+            "Microsoft.CodeAnalysis.CSharp.Workspaces": {
+              "target": "Package",
+              "version": "[4.0.1, )"
+            },
+            "Microsoft.TestPlatform.ObjectModel": {
+              "target": "Package",
+              "version": "[17.0.0, )"
+            },
+            "Microsoft.VSSDK.BuildTools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[17.0.5232, )"
+            },
+            "Microsoft.VisualStudio.LanguageServices": {
+              "target": "Package",
+              "version": "[4.0.1, )"
+            },
+            "Microsoft.VisualStudio.SDK": {
+              "target": "Package",
+              "version": "[17.0.32112.339, )"
+            },
+            "Microsoft.VisualStudio.TeamFoundation.Client": {
+              "target": "Package",
+              "version": "[16.170.31939, )"
+            },
+            "Microsoft.VisualStudio.Threading": {
+              "target": "Package",
+              "version": "[17.0.64, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.1, )"
+            },
+            "NuGet.VisualStudio": {
+              "target": "Package",
+              "version": "[17.0.0, )"
+            }
+          }
+        }
+      },
+      "runtimes": {
+        "win": {
+          "#import": []
+        }
+      }
+    }
+  }
+}

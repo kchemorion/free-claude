@@ -1,0 +1,3 @@
+C:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Debug\ClaudeVSExtension.csproj.AssemblyReference.cache
+C:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Debug\_EmptyResource.resources
+C:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Debug\ClaudeVSExtension.csproj.GenerateResource.cache

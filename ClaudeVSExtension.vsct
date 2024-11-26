@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+
+  <Commands package="guidClaudeExtensionPackage">
+    <Groups>
+      <Group guid="guidClaudeChatWindowCommandPackageCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <Button guid="guidClaudeChatWindowCommandPackageCmdSet" id="ClaudeChatWindowCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidClaudeChatWindowCommandPackageCmdSet" id="MyMenuGroup" />
+        <Strings>
+          <ButtonText>Claude Chat Window</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <Symbols>
+    <GuidSymbol name="guidClaudeExtensionPackage" value="{12345678-1234-1234-1234-123456789012}" />
+    <GuidSymbol name="guidClaudeChatWindowCommandPackageCmdSet" value="{96db1563-a4c4-4771-8b54-5c3c8c45c39f}">
+      <IDSymbol name="MyMenuGroup" value="0x1020" />
+      <IDSymbol name="ClaudeChatWindowCommandId" value="0x0100" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>

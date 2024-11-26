@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>ClaudeVSExtension</id>
+    <version>1.0.0</version>
+    <authors>ClaudeVSExtension</authors>
+    <description>Package Description</description>
+    <repository type="git" commit="3da73232f03081c42a9dc502b976d50b5ee98d0d" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.7.2">
+        <dependency id="Microsoft.Net.Compilers.Toolset" version="4.8.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VSSDK.BuildTools" version="17.0.5232" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualStudio.SDK" version="17.0.32112.339" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="13.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.Win32.Primitives" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.IO" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Net.Http" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Net.WebSockets" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Runtime" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.Algorithms" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.Encoding" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.Primitives" targetFramework=".NETFramework4.7.2" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.X509Certificates" targetFramework=".NETFramework4.7.2" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\bin\Release\net472\win-x64\ClaudeVSExtension.dll" target="lib\net472\ClaudeVSExtension.dll" />
+  </files>
+</package>

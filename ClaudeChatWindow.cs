@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Shell;
 using System.Windows.Controls;
 using System.Windows;
+using System.Threading.Tasks;
 
 namespace ClaudeVSExtension
 {
@@ -64,7 +65,7 @@ namespace ClaudeVSExtension
             claudeService = new ClaudeService();
         }
 
-        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        private async Task SendMessageAsync()
         {
             if (string.IsNullOrWhiteSpace(chatInput.Text))
                 return;
@@ -84,6 +85,21 @@ namespace ClaudeVSExtension
             catch (Exception ex)
             {
                 chatHistory.Text += $"Error: {ex.Message}\n";
+                // Log the error or show a message box for serious errors
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await SendMessageAsync();
+            }
+            catch (Exception ex)
+            {
+                // Handle any unhandled exceptions from SendMessageAsync
+                MessageBox.Show($"A critical error occurred: {ex.Message}", "Critical Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
