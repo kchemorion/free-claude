@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace ClaudeVSExtension
 {
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
+    [ProvideToolWindow(typeof(ClaudeChatWindow))]
     [Guid("87654321-4321-4321-4321-210987654321")]
     public class ClaudeChatWindow : ToolWindowPane
     {

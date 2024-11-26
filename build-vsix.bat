@@ -1,3 +1,3 @@
 @echo off
-call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
-msbuild /p:Configuration=Release /p:Platform=x64 /p:CreateVsixContainer=true ClaudeVSExtension.sln
+set MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+%MSBUILD% /t:Clean;Build /p:Configuration=Release;Platform=AnyCPU;DeployExtension=false;VSCTCompilerIncludeWildcard=false;VSCTCompilerAlwaysIncludeAllImagesInVSIX=false;UseVSHostingProcess=false /m:1 ClaudeVSExtension.csproj

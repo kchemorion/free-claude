@@ -1,0 +1,17 @@
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\bin\Release\Resources\ClaudeChatWindowCommand.png
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\bin\Release\ClaudeVSExtension.dll
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\bin\Release\Newtonsoft.Json.dll
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVSExtension.csproj.AssemblyReference.cache
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\_EmptyResource.resources
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVSExtension.csproj.GenerateResource.cache
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVSExtension.cto
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\VSCT.read.1.tlog
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\VSCT.write.1.tlog
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\resources.json
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ctoFiles.json
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\_EmptyResource.resources.original
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\mergeCto.cache
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVSExtension.GeneratedMSBuildEditorConfig.editorconfig
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVSExtension.csproj.CoreCompileInputs.cache
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVS.CFD0707E.Up2Date
+c:\Users\francis.chemorion\Desktop\mwisho kabisa\CascadeProjects\personal-website\obj\Any CPU\Release\ClaudeVSExtension.dll
