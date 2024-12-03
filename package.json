@@ -1,0 +1,91 @@
+{
+  "name": "claude-vscode",
+  "displayName": "Claude for VS Code",
+  "description": "Claude AI integration for Visual Studio Code",
+  "version": "0.0.1",
+  "publisher": "YourPublisherName",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claude-sidebar",
+          "title": "Claude AI Assistant",
+          "icon": "media/claude-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "claude-sidebar": [
+        {
+          "type": "webview",
+          "id": "claude.chatView",
+          "name": "Chat",
+          "icon": "media/chat.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "claude.askQuestion",
+        "title": "Ask Claude"
+      },
+      {
+        "command": "claude.createFile",
+        "title": "Create File"
+      },
+      {
+        "command": "claude.editFile",
+        "title": "Edit File"
+      },
+      {
+        "command": "claude.deleteFile",
+        "title": "Delete File"
+      },
+      {
+        "command": "claude.runCommand",
+        "title": "Run Command"
+      }
+    ],
+    "configuration": {
+      "title": "Claude",
+      "properties": {
+        "claude.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for Claude AI"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2"
+  }
+}

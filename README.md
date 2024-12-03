@@ -1,71 +1,43 @@
-# Free-Claude
+# Claude for VS Code
 
-A Visual Studio extension that integrates Claude AI functionality directly into your development environment.
+A Visual Studio Code extension that integrates Claude AI into your development environment.
 
 ## Features
 
-- Claude Chat Window accessible from the Tools menu
-- Interactive AI assistance while coding
-- Context-aware code suggestions and explanations
-
-## Requirements
-
-- Visual Studio 2022 (Community, Professional, or Enterprise)
-- .NET Framework 4.7.2
-- Windows operating system
+- Ask Claude questions directly from VS Code
+- View responses in a beautiful, formatted webview
+- Secure API key management through VS Code settings
 
 ## Installation
 
-1. Download the latest VSIX package from the releases page
-2. Close all instances of Visual Studio
-3. Double-click the VSIX file to install
-4. Restart Visual Studio
+1. Install the extension from the VS Code marketplace
+2. Get your Claude API key from [Anthropic](https://www.anthropic.com/)
+3. Set your API key in VS Code settings:
+   - Open Command Palette (Ctrl+Shift+P)
+   - Type "Settings"
+   - Select "Preferences: Open Settings (UI)"
+   - Search for "Claude"
+   - Enter your API key in the "Claude: API Key" field
 
-## Building from Source
+## Usage
 
-### Prerequisites
+1. Open the Command Palette (Ctrl+Shift+P)
+2. Type "Ask Claude" and select the command
+3. Enter your question in the input box
+4. View Claude's response in the webview panel
 
-- Visual Studio 2022
-- Visual Studio SDK
-- .NET Framework 4.7.2 SDK
+## Requirements
 
-### Build Steps
+- Visual Studio Code version 1.85.0 or higher
+- A valid Claude API key from Anthropic
+
+## Development
 
 1. Clone the repository
-2. Open `ClaudeVSExtension.sln` in Visual Studio
-3. Build the solution in Release configuration
-4. The VSIX package will be generated in the `bin/Release` directory
-
-Alternatively, use the provided build scripts:
-- `build-vsix.bat` - Full build script
-- `build-vsix-minimal.bat` - Minimal build script for troubleshooting
-
-## Project Structure
-
-- `ClaudeExtensionPackage.cs` - Main package class with VS integration
-- `ClaudeChatWindow.cs` - Chat window implementation
-- `ClaudeService.cs` - Claude AI service integration
-- `VSOperations.cs` - Visual Studio operations and utilities
-
-## Dependencies
-
-- Microsoft.VisualStudio.SDK (17.0.32112.339)
-- Microsoft.VSSDK.BuildTools (17.0.5232)
-- Newtonsoft.Json (13.0.1)
-
-## Known Issues
-
-- Memory constraints during VSCT compilation
-- Package registration challenges during build
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Run `npm install`
+3. Open in VS Code
+4. Press F5 to start debugging
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT
