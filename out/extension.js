@@ -3,118 +3,194 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
+const uuid_1 = require("uuid");
+const claude_1 = require("./api/claude");
+const storage_1 = require("./services/storage");
+const fileManager_1 = require("./services/fileManager");
+const ChatPanel_1 = require("./webview/ChatPanel");
 function activate(context) {
-    console.log('Claude extension is now active');
-    // Register the Claude API key configuration
-    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('claude.apiKey')) {
-            // Reload the extension when API key changes
-            vscode.commands.executeCommand('workbench.action.reloadWindow');
-        }
+    console.log('Claude AI Assistant is now active');
+    // Initialize services
+    const storageService = new storage_1.StorageService(context);
+    const fileManager = new fileManager_1.FileManager(context);
+    const claudeAPI = new claude_1.ClaudeAPI();
+    let currentConversationId;
+    // Register commands
+    let disposables = [];
+    disposables.push(vscode.commands.registerCommand('claude.openChat', () => {
+        ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
     }));
-    // Register the main command
-    let disposable = vscode.commands.registerCommand('claude.askQuestion', async () => {
-        const apiKey = vscode.workspace.getConfiguration().get('claude.apiKey');
-        if (!apiKey) {
-            const response = await vscode.window.showErrorMessage('Claude API key is not set. Would you like to set it now?', 'Yes', 'No');
-            if (response === 'Yes') {
-                vscode.commands.executeCommand('workbench.action.openSettings', 'claude.apiKey');
-            }
+    disposables.push(vscode.commands.registerCommand('claude.analyzeCode', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor found');
             return;
         }
-        const question = await vscode.window.showInputBox({
-            placeHolder: 'Ask Claude a question...',
-            prompt: 'What would you like to ask?'
-        });
-        if (question) {
-            try {
-                const response = await askClaude(question, apiKey);
-                // Create and show a new webview
-                const panel = vscode.window.createWebviewPanel('claudeResponse', 'Claude Response', vscode.ViewColumn.Two, {
-                    enableScripts: true
+        const document = editor.document;
+        const selection = editor.selection;
+        const text = selection.isEmpty
+            ? document.getText()
+            : document.getText(selection);
+        try {
+            const analysis = await claudeAPI.analyzeCode(text);
+            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
+            if (ChatPanel_1.ChatPanel.currentPanel) {
+                ChatPanel_1.ChatPanel.currentPanel.addMessage({
+                    id: (0, uuid_1.v4)(),
+                    role: 'assistant',
+                    content: analysis,
+                    timestamp: Date.now()
                 });
-                panel.webview.html = getWebviewContent(question, response.content);
-            }
-            catch (error) {
-                vscode.window.showErrorMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
             }
         }
-    });
-    context.subscriptions.push(disposable);
-}
-async function askClaude(question, apiKey) {
-    try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-2',
-                max_tokens: 1000,
-                messages: [{
-                        role: 'user',
-                        content: question
-                    }]
-            })
-        });
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.statusText}`);
+        catch (error) {
+            vscode.window.showErrorMessage(`Failed to analyze code: ${error instanceof Error ? error.message : String(error)}`);
         }
-        const data = await response.json();
-        return {
-            content: data.content[0].text
+    }));
+    disposables.push(vscode.commands.registerCommand('claude.explainCode', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor found');
+            return;
+        }
+        const document = editor.document;
+        const selection = editor.selection;
+        const text = selection.isEmpty
+            ? document.getText()
+            : document.getText(selection);
+        try {
+            const explanation = await claudeAPI.explainCode(text);
+            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
+            if (ChatPanel_1.ChatPanel.currentPanel) {
+                ChatPanel_1.ChatPanel.currentPanel.addMessage({
+                    id: (0, uuid_1.v4)(),
+                    role: 'assistant',
+                    content: explanation,
+                    timestamp: Date.now()
+                });
+            }
+        }
+        catch (error) {
+            vscode.window.showErrorMessage(`Failed to explain code: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }));
+    disposables.push(vscode.commands.registerCommand('claude.suggestImprovements', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor found');
+            return;
+        }
+        const document = editor.document;
+        const selection = editor.selection;
+        const text = selection.isEmpty
+            ? document.getText()
+            : document.getText(selection);
+        try {
+            const suggestions = await claudeAPI.suggestImprovements(text);
+            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
+            if (ChatPanel_1.ChatPanel.currentPanel) {
+                ChatPanel_1.ChatPanel.currentPanel.addMessage({
+                    id: (0, uuid_1.v4)(),
+                    role: 'assistant',
+                    content: suggestions,
+                    timestamp: Date.now()
+                });
+            }
+        }
+        catch (error) {
+            vscode.window.showErrorMessage(`Failed to suggest improvements: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }));
+    disposables.push(vscode.commands.registerCommand('claude.sendMessage', async (text) => {
+        if (!currentConversationId) {
+            currentConversationId = (0, uuid_1.v4)();
+            await storageService.createConversation({
+                id: currentConversationId,
+                title: text.slice(0, 50) + '...',
+                messages: [],
+                created: Date.now(),
+                lastUpdated: Date.now()
+            });
+        }
+        const userMessage = {
+            id: (0, uuid_1.v4)(),
+            role: 'user',
+            content: text,
+            timestamp: Date.now()
         };
-    }
-    catch (error) {
-        console.error('Error calling Claude API:', error);
-        throw error;
-    }
+        // Add context if there's selected code
+        const selectedCode = await fileManager.getSelectedCode();
+        if (selectedCode) {
+            userMessage.metadata = {
+                selectedCode
+            };
+        }
+        // Save user message
+        await storageService.saveMessage(currentConversationId, userMessage);
+        if (ChatPanel_1.ChatPanel.currentPanel) {
+            ChatPanel_1.ChatPanel.currentPanel.addMessage(userMessage);
+        }
+        try {
+            // Show loading indicator
+            vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "Claude is thinking...",
+                cancellable: false
+            }, async () => {
+                const messages = (await storageService.getConversation(currentConversationId))?.messages || [];
+                const response = await claudeAPI.chat(messages.map(m => ({ role: m.role, content: m.content })), 'You are Claude, an AI assistant integrated into VS Code. You can help with coding tasks, answer questions, and suggest improvements. You can also request to modify files or run commands, but you must always ask for permission first.');
+                const assistantMessage = {
+                    id: (0, uuid_1.v4)(),
+                    role: 'assistant',
+                    content: response.content[0].text,
+                    timestamp: Date.now()
+                };
+                // Handle any file change or command requests
+                if (response.metadata) {
+                    if (response.metadata.fileChanges) {
+                        for (const change of response.metadata.fileChanges) {
+                            try {
+                                await fileManager.handleFileRequest(change);
+                            }
+                            catch (error) {
+                                vscode.window.showErrorMessage(`Failed to apply file change: ${error.message}`);
+                            }
+                        }
+                    }
+                    if (response.metadata.commands) {
+                        for (const command of response.metadata.commands) {
+                            try {
+                                await fileManager.executeCommand(command);
+                            }
+                            catch (error) {
+                                vscode.window.showErrorMessage(`Failed to execute command: ${error.message}`);
+                            }
+                        }
+                    }
+                }
+                // Save assistant message
+                await storageService.saveMessage(currentConversationId, assistantMessage);
+                if (ChatPanel_1.ChatPanel.currentPanel) {
+                    ChatPanel_1.ChatPanel.currentPanel.addMessage(assistantMessage);
+                }
+            });
+        }
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            vscode.window.showErrorMessage(`Error: ${errorMessage}`);
+        }
+    }));
+    disposables.push(vscode.commands.registerCommand('claude.clearHistory', async () => {
+        if (currentConversationId) {
+            await storageService.deleteConversation(currentConversationId);
+            currentConversationId = undefined;
+            vscode.window.showInformationMessage('Chat history cleared');
+            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
+        }
+    }));
+    context.subscriptions.push(...disposables);
 }
-function getWebviewContent(question, answer) {
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {
-                    font-family: var(--vscode-font-family);
-                    padding: 20px;
-                    line-height: 1.6;
-                }
-                .question {
-                    margin-bottom: 20px;
-                    padding: 10px;
-                    background: var(--vscode-editor-background);
-                    border-left: 4px solid var(--vscode-activityBarBadge-background);
-                }
-                .answer {
-                    white-space: pre-wrap;
-                }
-                pre {
-                    background: var(--vscode-editor-background);
-                    padding: 10px;
-                    border-radius: 4px;
-                    overflow-x: auto;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="question">
-                <strong>Question:</strong>
-                <p>${question}</p>
-            </div>
-            <div class="answer">
-                <strong>Claude's Response:</strong>
-                <p>${answer}</p>
-            </div>
-        </body>
-        </html>
-    `;
+function deactivate() {
+    // Clean up resources
 }
-function deactivate() { }
 //# sourceMappingURL=extension.js.map

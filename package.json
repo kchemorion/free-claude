@@ -1,8 +1,8 @@
 {
   "name": "claude-vscode",
-  "displayName": "Claude for VS Code",
-  "description": "Claude AI integration for Visual Studio Code",
-  "version": "0.0.1",
+  "displayName": "Claude AI Assistant",
+  "description": "Advanced Claude AI integration for Visual Studio Code with file manipulation, code analysis, and intelligent assistance",
+  "version": "0.0.2",
   "publisher": "YourPublisherName",
   "private": true,
   "license": "MIT",
@@ -14,11 +14,45 @@
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Programming Languages",
+    "Machine Learning",
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Claude AI Assistant",
+      "properties": {
+        "claude.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for Claude AI"
+        },
+        "claude.model": {
+          "type": "string",
+          "default": "claude-2.1",
+          "enum": [
+            "claude-2.1",
+            "claude-2.0",
+            "claude-instant"
+          ],
+          "description": "Claude model to use"
+        },
+        "claude.maxRetries": {
+          "type": "number",
+          "default": 3,
+          "description": "Maximum number of retries for failed API calls"
+        },
+        "claude.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Timeout for API calls in milliseconds"
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -34,7 +68,8 @@
           "type": "webview",
           "id": "claude.chatView",
           "name": "Chat",
-          "icon": "media/chat.svg"
+          "icon": "media/chat.svg",
+          "contextualTitle": "Claude AI Chat"
         }
       ]
     },
@@ -44,32 +79,51 @@
         "title": "Ask Claude"
       },
       {
+        "command": "claude.analyzeCode",
+        "title": "Analyze Current File"
+      },
+      {
+        "command": "claude.explainCode",
+        "title": "Explain Selected Code"
+      },
+      {
+        "command": "claude.suggestImprovements",
+        "title": "Suggest Code Improvements"
+      },
+      {
         "command": "claude.createFile",
-        "title": "Create File"
+        "title": "Create New File"
       },
       {
         "command": "claude.editFile",
         "title": "Edit File"
       },
       {
-        "command": "claude.deleteFile",
-        "title": "Delete File"
-      },
-      {
-        "command": "claude.runCommand",
-        "title": "Run Command"
+        "command": "claude.clearHistory",
+        "title": "Clear Chat History"
       }
     ],
-    "configuration": {
-      "title": "Claude",
-      "properties": {
-        "claude.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "API key for Claude AI"
+    "menus": {
+      "editor/context": [
+        {
+          "command": "claude.explainCode",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        },
+        {
+          "command": "claude.suggestImprovements",
+          "when": "editorHasSelection",
+          "group": "navigation"
         }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "claude.askQuestion",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c"
       }
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -77,15 +131,29 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
-    "package": "vsce package"
+    "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/markdown-it": "^13.0.9",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.5",
+    "@types/node-fetch": "^2.6.9",
+    "@types/sqlite3": "^3.1.11",
+    "@types/uuid": "^10.0.0",
     "@types/vscode": "^1.85.0",
-    "@types/node": "18.x",
-    "@typescript-eslint/eslint-plugin": "^6.13.1",
-    "@typescript-eslint/parser": "^6.13.1",
-    "eslint": "^8.54.0",
-    "typescript": "^5.3.2"
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "highlight.js": "^11.10.0",
+    "markdown-it": "^14.1.0",
+    "node-fetch": "^3.3.2",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.0.3"
   }
 }
