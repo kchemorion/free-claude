@@ -3,194 +3,268 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
-const uuid_1 = require("uuid");
 const claude_1 = require("./api/claude");
-const storage_1 = require("./services/storage");
-const fileManager_1 = require("./services/fileManager");
-const ChatPanel_1 = require("./webview/ChatPanel");
-function activate(context) {
-    console.log('Claude AI Assistant is now active');
+const codeGenerator_1 = require("./services/codeGenerator");
+const gitIntegration_1 = require("./services/gitIntegration");
+const documentationGenerator_1 = require("./services/documentationGenerator");
+async function activate(context) {
+    // Initialize configuration
+    const config = vscode.workspace.getConfiguration('claudeAssistant');
+    const apiKey = config.get('apiKey');
+    if (!apiKey) {
+        const response = await vscode.window.showWarningMessage('Claude API key not found. Would you like to set it now?', 'Yes', 'No');
+        if (response === 'Yes') {
+            const key = await vscode.window.showInputBox({
+                prompt: 'Enter your Claude API key',
+                password: true
+            });
+            if (key) {
+                await config.update('apiKey', key, true);
+            }
+        }
+        return;
+    }
     // Initialize services
-    const storageService = new storage_1.StorageService(context);
-    const fileManager = new fileManager_1.FileManager(context);
-    const claudeAPI = new claude_1.ClaudeAPI();
-    let currentConversationId;
+    const claudeAPI = new claude_1.ClaudeAPI(apiKey);
+    const codeGenerator = new codeGenerator_1.CodeGenerator(claudeAPI);
+    const gitIntegration = new gitIntegration_1.GitIntegration(claudeAPI);
+    const documentationGenerator = new documentationGenerator_1.DocumentationGenerator(claudeAPI);
+    // Register status bar items
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.text = "$(symbol-misc) Claude AI";
+    statusBarItem.tooltip = "Claude AI Assistant";
+    statusBarItem.show();
+    context.subscriptions.push(statusBarItem);
     // Register commands
-    let disposables = [];
-    disposables.push(vscode.commands.registerCommand('claude.openChat', () => {
-        ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
-    }));
-    disposables.push(vscode.commands.registerCommand('claude.analyzeCode', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showErrorMessage('No active editor found');
-            return;
-        }
-        const document = editor.document;
-        const selection = editor.selection;
-        const text = selection.isEmpty
-            ? document.getText()
-            : document.getText(selection);
-        try {
-            const analysis = await claudeAPI.analyzeCode(text);
-            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
-            if (ChatPanel_1.ChatPanel.currentPanel) {
-                ChatPanel_1.ChatPanel.currentPanel.addMessage({
-                    id: (0, uuid_1.v4)(),
-                    role: 'assistant',
-                    content: analysis,
-                    timestamp: Date.now()
+    const commands = [
+        // Code Generation Commands
+        vscode.commands.registerCommand('claude.generateCode', async () => {
+            try {
+                statusBarItem.text = "$(loading~spin) Generating code...";
+                const description = await vscode.window.showInputBox({
+                    prompt: 'Describe the code you want to generate',
+                    placeHolder: 'e.g., A function that sorts an array using quicksort'
                 });
-            }
-        }
-        catch (error) {
-            vscode.window.showErrorMessage(`Failed to analyze code: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }));
-    disposables.push(vscode.commands.registerCommand('claude.explainCode', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showErrorMessage('No active editor found');
-            return;
-        }
-        const document = editor.document;
-        const selection = editor.selection;
-        const text = selection.isEmpty
-            ? document.getText()
-            : document.getText(selection);
-        try {
-            const explanation = await claudeAPI.explainCode(text);
-            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
-            if (ChatPanel_1.ChatPanel.currentPanel) {
-                ChatPanel_1.ChatPanel.currentPanel.addMessage({
-                    id: (0, uuid_1.v4)(),
-                    role: 'assistant',
-                    content: explanation,
-                    timestamp: Date.now()
+                if (!description)
+                    return;
+                const options = await vscode.window.showQuickPick([
+                    { label: 'TypeScript', language: 'typescript' },
+                    { label: 'JavaScript', language: 'javascript' },
+                    { label: 'Python', language: 'python' },
+                    { label: 'Java', language: 'java' },
+                    { label: 'Go', language: 'go' }
+                ], {
+                    placeHolder: 'Select the programming language'
                 });
-            }
-        }
-        catch (error) {
-            vscode.window.showErrorMessage(`Failed to explain code: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }));
-    disposables.push(vscode.commands.registerCommand('claude.suggestImprovements', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showErrorMessage('No active editor found');
-            return;
-        }
-        const document = editor.document;
-        const selection = editor.selection;
-        const text = selection.isEmpty
-            ? document.getText()
-            : document.getText(selection);
-        try {
-            const suggestions = await claudeAPI.suggestImprovements(text);
-            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
-            if (ChatPanel_1.ChatPanel.currentPanel) {
-                ChatPanel_1.ChatPanel.currentPanel.addMessage({
-                    id: (0, uuid_1.v4)(),
-                    role: 'assistant',
-                    content: suggestions,
-                    timestamp: Date.now()
+                if (!options)
+                    return;
+                await codeGenerator.generateCode(description, {
+                    language: options.language,
+                    includeComments: true,
+                    includeTests: true,
+                    generateDocs: true
                 });
+                vscode.window.showInformationMessage('Code generated successfully!');
             }
-        }
-        catch (error) {
-            vscode.window.showErrorMessage(`Failed to suggest improvements: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }));
-    disposables.push(vscode.commands.registerCommand('claude.sendMessage', async (text) => {
-        if (!currentConversationId) {
-            currentConversationId = (0, uuid_1.v4)();
-            await storageService.createConversation({
-                id: currentConversationId,
-                title: text.slice(0, 50) + '...',
-                messages: [],
-                created: Date.now(),
-                lastUpdated: Date.now()
-            });
-        }
-        const userMessage = {
-            id: (0, uuid_1.v4)(),
-            role: 'user',
-            content: text,
-            timestamp: Date.now()
-        };
-        // Add context if there's selected code
-        const selectedCode = await fileManager.getSelectedCode();
-        if (selectedCode) {
-            userMessage.metadata = {
-                selectedCode
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to generate code: ${error}`);
+            }
+            finally {
+                statusBarItem.text = "$(symbol-misc) Claude AI";
+            }
+        }),
+        vscode.commands.registerCommand('claude.generateTests', async () => {
+            try {
+                const editor = vscode.window.activeTextEditor;
+                if (!editor) {
+                    throw new Error('No active editor');
+                }
+                statusBarItem.text = "$(loading~spin) Generating tests...";
+                await codeGenerator.generateTests(editor.document, {
+                    framework: 'jest',
+                    coverage: 80,
+                    includeSnapshots: true,
+                    includeMocks: true
+                });
+                vscode.window.showInformationMessage('Tests generated successfully!');
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to generate tests: ${error}`);
+            }
+            finally {
+                statusBarItem.text = "$(symbol-misc) Claude AI";
+            }
+        }),
+        // Git Integration Commands
+        vscode.commands.registerCommand('claude.suggestCommitMessage', async () => {
+            try {
+                statusBarItem.text = "$(loading~spin) Suggesting commit message...";
+                const suggestion = await gitIntegration.suggestCommitMessage();
+                const message = await vscode.window.showQuickPick([
+                    { label: suggestion.message, description: 'Suggested message' },
+                    { label: 'Custom message', description: 'Enter your own message' }
+                ]);
+                if (message?.label === 'Custom message') {
+                    const customMessage = await vscode.window.showInputBox({
+                        prompt: 'Enter commit message',
+                        value: suggestion.message
+                    });
+                    if (customMessage) {
+                        await vscode.commands.executeCommand('git.commit', customMessage);
+                    }
+                }
+                else if (message) {
+                    await vscode.commands.executeCommand('git.commit', message.label);
+                }
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to suggest commit message: ${error}`);
+            }
+            finally {
+                statusBarItem.text = "$(symbol-misc) Claude AI";
+            }
+        }),
+        vscode.commands.registerCommand('claude.reviewChanges', async () => {
+            try {
+                statusBarItem.text = "$(loading~spin) Reviewing changes...";
+                const comments = await gitIntegration.reviewChanges();
+                // Create and show review panel
+                const panel = vscode.window.createWebviewPanel('codeReview', 'Code Review', vscode.ViewColumn.Two, { enableScripts: true });
+                panel.webview.html = generateReviewHtml(comments);
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to review changes: ${error}`);
+            }
+            finally {
+                statusBarItem.text = "$(symbol-misc) Claude AI";
+            }
+        }),
+        vscode.commands.registerCommand('claude.generatePRDescription', async () => {
+            try {
+                statusBarItem.text = "$(loading~spin) Generating PR description...";
+                const description = await gitIntegration.generatePRDescription();
+                // Create and show PR description panel
+                const panel = vscode.window.createWebviewPanel('prDescription', 'Pull Request Description', vscode.ViewColumn.Two, { enableScripts: true });
+                panel.webview.html = generatePRDescriptionHtml(description);
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to generate PR description: ${error}`);
+            }
+            finally {
+                statusBarItem.text = "$(symbol-misc) Claude AI";
+            }
+        }),
+        // Documentation Commands
+        vscode.commands.registerCommand('claude.generateDocumentation', async () => {
+            try {
+                const editor = vscode.window.activeTextEditor;
+                if (!editor) {
+                    throw new Error('No active editor');
+                }
+                statusBarItem.text = "$(loading~spin) Generating documentation...";
+                await documentationGenerator.generateDocumentation(editor.document);
+                vscode.window.showInformationMessage('Documentation generated successfully!');
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to generate documentation: ${error}`);
+            }
+            finally {
+                statusBarItem.text = "$(symbol-misc) Claude AI";
+            }
+        })
+    ];
+    context.subscriptions.push(...commands);
+    // Register code actions
+    const codeActionProvider = vscode.languages.registerCodeActionsProvider({ scheme: 'file' }, {
+        provideCodeActions(document, range, context, token) {
+            const actions = [];
+            // Add code generation action
+            const generateAction = new vscode.CodeAction('Generate code with Claude AI', vscode.CodeActionKind.RefactorRewrite);
+            generateAction.command = {
+                title: 'Generate code',
+                command: 'claude.generateCode'
             };
+            actions.push(generateAction);
+            // Add test generation action
+            const testAction = new vscode.CodeAction('Generate tests with Claude AI', vscode.CodeActionKind.RefactorRewrite);
+            testAction.command = {
+                title: 'Generate tests',
+                command: 'claude.generateTests'
+            };
+            actions.push(testAction);
+            return actions;
         }
-        // Save user message
-        await storageService.saveMessage(currentConversationId, userMessage);
-        if (ChatPanel_1.ChatPanel.currentPanel) {
-            ChatPanel_1.ChatPanel.currentPanel.addMessage(userMessage);
-        }
-        try {
-            // Show loading indicator
-            vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Claude is thinking...",
-                cancellable: false
-            }, async () => {
-                const messages = (await storageService.getConversation(currentConversationId))?.messages || [];
-                const response = await claudeAPI.chat(messages.map(m => ({ role: m.role, content: m.content })), 'You are Claude, an AI assistant integrated into VS Code. You can help with coding tasks, answer questions, and suggest improvements. You can also request to modify files or run commands, but you must always ask for permission first.');
-                const assistantMessage = {
-                    id: (0, uuid_1.v4)(),
-                    role: 'assistant',
-                    content: response.content[0].text,
-                    timestamp: Date.now()
-                };
-                // Handle any file change or command requests
-                if (response.metadata) {
-                    if (response.metadata.fileChanges) {
-                        for (const change of response.metadata.fileChanges) {
-                            try {
-                                await fileManager.handleFileRequest(change);
-                            }
-                            catch (error) {
-                                vscode.window.showErrorMessage(`Failed to apply file change: ${error.message}`);
-                            }
-                        }
-                    }
-                    if (response.metadata.commands) {
-                        for (const command of response.metadata.commands) {
-                            try {
-                                await fileManager.executeCommand(command);
-                            }
-                            catch (error) {
-                                vscode.window.showErrorMessage(`Failed to execute command: ${error.message}`);
-                            }
-                        }
-                    }
-                }
-                // Save assistant message
-                await storageService.saveMessage(currentConversationId, assistantMessage);
-                if (ChatPanel_1.ChatPanel.currentPanel) {
-                    ChatPanel_1.ChatPanel.currentPanel.addMessage(assistantMessage);
-                }
-            });
-        }
-        catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            vscode.window.showErrorMessage(`Error: ${errorMessage}`);
-        }
-    }));
-    disposables.push(vscode.commands.registerCommand('claude.clearHistory', async () => {
-        if (currentConversationId) {
-            await storageService.deleteConversation(currentConversationId);
-            currentConversationId = undefined;
-            vscode.window.showInformationMessage('Chat history cleared');
-            ChatPanel_1.ChatPanel.createOrShow(context.extensionUri);
-        }
-    }));
-    context.subscriptions.push(...disposables);
+    });
+    context.subscriptions.push(codeActionProvider);
 }
-function deactivate() {
-    // Clean up resources
+function generateReviewHtml(comments) {
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                .comment { margin-bottom: 20px; padding: 10px; border-radius: 5px; }
+                .error { background-color: #ffe6e6; }
+                .warning { background-color: #fff3e6; }
+                .info { background-color: #e6f3ff; }
+                .file { font-weight: bold; }
+                .message { margin-top: 5px; }
+                .suggestion { margin-top: 5px; font-style: italic; }
+            </style>
+        </head>
+        <body>
+            <h2>Code Review Comments</h2>
+            ${comments.map(comment => `
+                <div class="comment ${comment.severity}">
+                    <div class="file">${comment.file}:${comment.line}</div>
+                    <div class="message">${comment.message}</div>
+                    ${comment.suggestion ? `<div class="suggestion">Suggestion: ${comment.suggestion}</div>` : ''}
+                </div>
+            `).join('')}
+        </body>
+        </html>
+    `;
 }
+function generatePRDescriptionHtml(description) {
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                .title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+                .section { margin-bottom: 20px; }
+                .section-title { font-weight: bold; margin-bottom: 10px; }
+                .reviewers, .labels { display: flex; gap: 5px; flex-wrap: wrap; }
+                .reviewer, .label { 
+                    padding: 5px 10px; 
+                    border-radius: 15px; 
+                    background-color: #e6f3ff;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="title">${description.title}</div>
+            <div class="section">
+                <div class="section-title">Description</div>
+                <div>${description.body}</div>
+            </div>
+            <div class="section">
+                <div class="section-title">Reviewers</div>
+                <div class="reviewers">
+                    ${description.reviewers.map(r => `<div class="reviewer">@${r}</div>`).join('')}
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title">Labels</div>
+                <div class="labels">
+                    ${description.labels.map(l => `<div class="label">${l}</div>`).join('')}
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+}
+function deactivate() { }
 //# sourceMappingURL=extension.js.map

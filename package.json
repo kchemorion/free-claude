@@ -26,12 +26,12 @@
     "configuration": {
       "title": "Claude AI Assistant",
       "properties": {
-        "claude.apiKey": {
+        "claudeAssistant.apiKey": {
           "type": "string",
           "default": "",
           "description": "API key for Claude AI"
         },
-        "claude.model": {
+        "claudeAssistant.model": {
           "type": "string",
           "default": "claude-2.1",
           "enum": [
@@ -41,12 +41,12 @@
           ],
           "description": "Claude model to use"
         },
-        "claude.maxRetries": {
+        "claudeAssistant.maxRetries": {
           "type": "number",
           "default": 3,
           "description": "Maximum number of retries for failed API calls"
         },
-        "claude.timeout": {
+        "claudeAssistant.timeout": {
           "type": "number",
           "default": 30000,
           "description": "Timeout for API calls in milliseconds"
@@ -75,55 +75,68 @@
     },
     "commands": [
       {
-        "command": "claude.askQuestion",
-        "title": "Ask Claude"
+        "command": "claude.generateCode",
+        "title": "Generate Code with Claude AI"
       },
       {
-        "command": "claude.analyzeCode",
-        "title": "Analyze Current File"
+        "command": "claude.generateTests",
+        "title": "Generate Tests"
       },
       {
-        "command": "claude.explainCode",
-        "title": "Explain Selected Code"
+        "command": "claude.suggestCommitMessage",
+        "title": "Suggest Commit Message"
       },
       {
-        "command": "claude.suggestImprovements",
-        "title": "Suggest Code Improvements"
+        "command": "claude.reviewChanges",
+        "title": "Review Code Changes"
       },
       {
-        "command": "claude.createFile",
-        "title": "Create New File"
+        "command": "claude.generatePRDescription",
+        "title": "Generate PR Description"
       },
       {
-        "command": "claude.editFile",
-        "title": "Edit File"
+        "command": "claude.generateDocumentation",
+        "title": "Generate Documentation"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "claude.generateCode",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
       },
       {
-        "command": "claude.clearHistory",
-        "title": "Clear Chat History"
+        "command": "claude.generateTests",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "claude.explainCode",
-          "when": "editorHasSelection",
+          "command": "claude.generateCode",
+          "group": "claudeAI@1"
+        },
+        {
+          "command": "claude.generateTests",
+          "group": "claudeAI@2"
+        },
+        {
+          "command": "claude.generateDocumentation",
+          "group": "claudeAI@3"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "claude.suggestCommitMessage",
           "group": "navigation"
         },
         {
-          "command": "claude.suggestImprovements",
-          "when": "editorHasSelection",
+          "command": "claude.reviewChanges",
           "group": "navigation"
         }
       ]
-    },
-    "keybindings": [
-      {
-        "command": "claude.askQuestion",
-        "key": "ctrl+shift+c",
-        "mac": "cmd+shift+c"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -131,29 +144,25 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/markdown-it": "^13.0.9",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.5",
-    "@types/node-fetch": "^2.6.9",
-    "@types/sqlite3": "^3.1.11",
-    "@types/uuid": "^10.0.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.2.5",
     "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
-    "eslint": "^8.56.0",
-    "glob": "^10.3.10",
+    "@typescript-eslint/eslint-plugin": "^5.59.8",
+    "@typescript-eslint/parser": "^5.59.8",
+    "@vscode/test-electron": "^2.3.2",
+    "eslint": "^8.41.0",
+    "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.1.3",
+    "vsce": "^2.15.0"
   },
   "dependencies": {
-    "highlight.js": "^11.10.0",
-    "markdown-it": "^14.1.0",
-    "node-fetch": "^3.3.2",
-    "sqlite3": "^5.1.7",
-    "uuid": "^11.0.3"
+    "axios": "^1.4.0"
   }
 }
