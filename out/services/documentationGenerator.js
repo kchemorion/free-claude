@@ -100,35 +100,53 @@ class DocumentationGenerator {
         return languageMap[ext] || 'Unknown';
     }
     buildDocumentationPrompt(code, language, options) {
-        let prompt = `Generate documentation for the following ${language} code:\n\`\`\`\n${code}\n\`\`\`\n\n`;
+        let prompt = `Generate comprehensive documentation for this ${language} code:
+
+${code}
+
+Include:
+1. Overview of functionality
+2. API documentation
+3. Usage examples
+4. Parameters and return types
+5. Dependencies and requirements`;
         if (options.format) {
-            prompt += `Format: ${options.format}\n`;
+            prompt += `\nFormat: ${options.format}`;
         }
         if (options.includeExamples) {
-            prompt += 'Include usage examples\n';
+            prompt += '\nInclude usage examples';
         }
         if (options.includeTypes) {
-            prompt += 'Include type information\n';
+            prompt += '\nInclude type information';
         }
         if (options.includeReturns) {
-            prompt += 'Include return value descriptions\n';
+            prompt += '\nInclude return value descriptions';
         }
         prompt += '\nProvide clear and comprehensive documentation that follows best practices.';
         return prompt;
     }
     buildAPIDocumentationPrompt(code, language, options) {
-        let prompt = `Generate API documentation for the following ${language} code:\n\`\`\`\n${code}\n\`\`\`\n\n`;
+        let prompt = `Generate API documentation for this ${language} code:
+
+${code}
+
+Include:
+1. API endpoint details
+2. Request/response examples
+3. Authentication information
+4. Parameters and return types
+5. Dependencies and requirements`;
         if (options.format) {
-            prompt += `Format: ${options.format}\n`;
+            prompt += `\nFormat: ${options.format}`;
         }
         if (options.includeEndpoints) {
-            prompt += 'Include endpoint details\n';
+            prompt += '\nInclude endpoint details';
         }
         if (options.includeRequestResponse) {
-            prompt += 'Include request/response examples\n';
+            prompt += '\nInclude request/response examples';
         }
         if (options.includeAuthentication) {
-            prompt += 'Include authentication information\n';
+            prompt += '\nInclude authentication information';
         }
         prompt += '\nProvide clear and comprehensive API documentation that follows best practices.';
         return prompt;

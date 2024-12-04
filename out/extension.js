@@ -8,263 +8,101 @@ const codeGenerator_1 = require("./services/codeGenerator");
 const gitIntegration_1 = require("./services/gitIntegration");
 const documentationGenerator_1 = require("./services/documentationGenerator");
 async function activate(context) {
-    // Initialize configuration
-    const config = vscode.workspace.getConfiguration('claudeAssistant');
-    const apiKey = config.get('apiKey');
-    if (!apiKey) {
-        const response = await vscode.window.showWarningMessage('Claude API key not found. Would you like to set it now?', 'Yes', 'No');
-        if (response === 'Yes') {
-            const key = await vscode.window.showInputBox({
-                prompt: 'Enter your Claude API key',
-                password: true
+    try {
+        const claudeAPI = new claude_1.ClaudeAPI();
+        const codeGenerator = new codeGenerator_1.CodeGenerator(claudeAPI);
+        const gitIntegration = new gitIntegration_1.GitIntegration(claudeAPI);
+        const documentationGenerator = new documentationGenerator_1.DocumentationGenerator(claudeAPI);
+        // Register code generation commands
+        context.subscriptions.push(vscode.commands.registerCommand('claudeAssistant.generateCode', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor');
+                return;
+            }
+            const language = editor.document.languageId;
+            const prompt = await vscode.window.showInputBox({
+                prompt: 'Enter code generation prompt',
+                placeHolder: 'e.g., Create a function that sorts an array'
             });
-            if (key) {
-                await config.update('apiKey', key, true);
-            }
-        }
-        return;
-    }
-    // Initialize services
-    const claudeAPI = new claude_1.ClaudeAPI(apiKey);
-    const codeGenerator = new codeGenerator_1.CodeGenerator(claudeAPI);
-    const gitIntegration = new gitIntegration_1.GitIntegration(claudeAPI);
-    const documentationGenerator = new documentationGenerator_1.DocumentationGenerator(claudeAPI);
-    // Register status bar items
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = "$(symbol-misc) Claude AI";
-    statusBarItem.tooltip = "Claude AI Assistant";
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
-    // Register commands
-    const commands = [
-        // Code Generation Commands
-        vscode.commands.registerCommand('claude.generateCode', async () => {
+            if (!prompt)
+                return;
             try {
-                statusBarItem.text = "$(loading~spin) Generating code...";
-                const description = await vscode.window.showInputBox({
-                    prompt: 'Describe the code you want to generate',
-                    placeHolder: 'e.g., A function that sorts an array using quicksort'
-                });
-                if (!description)
-                    return;
-                const options = await vscode.window.showQuickPick([
-                    { label: 'TypeScript', language: 'typescript' },
-                    { label: 'JavaScript', language: 'javascript' },
-                    { label: 'Python', language: 'python' },
-                    { label: 'Java', language: 'java' },
-                    { label: 'Go', language: 'go' }
-                ], {
-                    placeHolder: 'Select the programming language'
-                });
-                if (!options)
-                    return;
-                await codeGenerator.generateCode(description, {
-                    language: options.language,
-                    includeComments: true,
-                    includeTests: true,
-                    generateDocs: true
-                });
-                vscode.window.showInformationMessage('Code generated successfully!');
+                await codeGenerator.generateCode(prompt, language);
             }
             catch (error) {
-                vscode.window.showErrorMessage(`Failed to generate code: ${error}`);
+                vscode.window.showErrorMessage(`Code generation failed: ${error}`);
             }
-            finally {
-                statusBarItem.text = "$(symbol-misc) Claude AI";
+        }), vscode.commands.registerCommand('claudeAssistant.generateTests', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor');
+                return;
             }
-        }),
-        vscode.commands.registerCommand('claude.generateTests', async () => {
             try {
-                const editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    throw new Error('No active editor');
-                }
-                statusBarItem.text = "$(loading~spin) Generating tests...";
-                await codeGenerator.generateTests(editor.document, {
-                    framework: 'jest',
-                    coverage: 80,
-                    includeSnapshots: true,
-                    includeMocks: true
-                });
-                vscode.window.showInformationMessage('Tests generated successfully!');
+                await codeGenerator.generateTests(editor.document);
             }
             catch (error) {
-                vscode.window.showErrorMessage(`Failed to generate tests: ${error}`);
+                vscode.window.showErrorMessage(`Test generation failed: ${error}`);
             }
-            finally {
-                statusBarItem.text = "$(symbol-misc) Claude AI";
-            }
-        }),
-        // Git Integration Commands
-        vscode.commands.registerCommand('claude.suggestCommitMessage', async () => {
+        }), 
+        // Git integration commands
+        vscode.commands.registerCommand('claudeAssistant.suggestCommitMessage', async () => {
             try {
-                statusBarItem.text = "$(loading~spin) Suggesting commit message...";
-                const suggestion = await gitIntegration.suggestCommitMessage();
-                const message = await vscode.window.showQuickPick([
-                    { label: suggestion.message, description: 'Suggested message' },
-                    { label: 'Custom message', description: 'Enter your own message' }
-                ]);
-                if (message?.label === 'Custom message') {
-                    const customMessage = await vscode.window.showInputBox({
-                        prompt: 'Enter commit message',
-                        value: suggestion.message
-                    });
-                    if (customMessage) {
-                        await vscode.commands.executeCommand('git.commit', customMessage);
-                    }
-                }
-                else if (message) {
-                    await vscode.commands.executeCommand('git.commit', message.label);
+                const message = await gitIntegration.suggestCommitMessage();
+                if (message) {
+                    await vscode.env.clipboard.writeText(message);
+                    vscode.window.showInformationMessage('Commit message copied to clipboard');
                 }
             }
             catch (error) {
                 vscode.window.showErrorMessage(`Failed to suggest commit message: ${error}`);
             }
-            finally {
-                statusBarItem.text = "$(symbol-misc) Claude AI";
-            }
-        }),
-        vscode.commands.registerCommand('claude.reviewChanges', async () => {
+        }), vscode.commands.registerCommand('claudeAssistant.reviewChanges', async () => {
             try {
-                statusBarItem.text = "$(loading~spin) Reviewing changes...";
-                const comments = await gitIntegration.reviewChanges();
-                // Create and show review panel
-                const panel = vscode.window.createWebviewPanel('codeReview', 'Code Review', vscode.ViewColumn.Two, { enableScripts: true });
-                panel.webview.html = generateReviewHtml(comments);
+                await gitIntegration.reviewChanges();
             }
             catch (error) {
                 vscode.window.showErrorMessage(`Failed to review changes: ${error}`);
             }
-            finally {
-                statusBarItem.text = "$(symbol-misc) Claude AI";
-            }
-        }),
-        vscode.commands.registerCommand('claude.generatePRDescription', async () => {
+        }), vscode.commands.registerCommand('claudeAssistant.generatePRDescription', async () => {
             try {
-                statusBarItem.text = "$(loading~spin) Generating PR description...";
                 const description = await gitIntegration.generatePRDescription();
-                // Create and show PR description panel
-                const panel = vscode.window.createWebviewPanel('prDescription', 'Pull Request Description', vscode.ViewColumn.Two, { enableScripts: true });
-                panel.webview.html = generatePRDescriptionHtml(description);
+                if (description) {
+                    await vscode.env.clipboard.writeText(description);
+                    vscode.window.showInformationMessage('PR description copied to clipboard');
+                }
             }
             catch (error) {
                 vscode.window.showErrorMessage(`Failed to generate PR description: ${error}`);
             }
-            finally {
-                statusBarItem.text = "$(symbol-misc) Claude AI";
+        }), 
+        // Documentation commands
+        vscode.commands.registerCommand('claudeAssistant.generateDocumentation', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor');
+                return;
             }
-        }),
-        // Documentation Commands
-        vscode.commands.registerCommand('claude.generateDocumentation', async () => {
             try {
-                const editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    throw new Error('No active editor');
-                }
-                statusBarItem.text = "$(loading~spin) Generating documentation...";
                 await documentationGenerator.generateDocumentation(editor.document);
-                vscode.window.showInformationMessage('Documentation generated successfully!');
             }
             catch (error) {
-                vscode.window.showErrorMessage(`Failed to generate documentation: ${error}`);
+                vscode.window.showErrorMessage(`Documentation generation failed: ${error}`);
             }
-            finally {
-                statusBarItem.text = "$(symbol-misc) Claude AI";
-            }
-        })
-    ];
-    context.subscriptions.push(...commands);
-    // Register code actions
-    const codeActionProvider = vscode.languages.registerCodeActionsProvider({ scheme: 'file' }, {
-        provideCodeActions(document, range, context, token) {
-            const actions = [];
-            // Add code generation action
-            const generateAction = new vscode.CodeAction('Generate code with Claude AI', vscode.CodeActionKind.RefactorRewrite);
-            generateAction.command = {
-                title: 'Generate code',
-                command: 'claude.generateCode'
-            };
-            actions.push(generateAction);
-            // Add test generation action
-            const testAction = new vscode.CodeAction('Generate tests with Claude AI', vscode.CodeActionKind.RefactorRewrite);
-            testAction.command = {
-                title: 'Generate tests',
-                command: 'claude.generateTests'
-            };
-            actions.push(testAction);
-            return actions;
-        }
-    });
-    context.subscriptions.push(codeActionProvider);
-}
-function generateReviewHtml(comments) {
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .comment { margin-bottom: 20px; padding: 10px; border-radius: 5px; }
-                .error { background-color: #ffe6e6; }
-                .warning { background-color: #fff3e6; }
-                .info { background-color: #e6f3ff; }
-                .file { font-weight: bold; }
-                .message { margin-top: 5px; }
-                .suggestion { margin-top: 5px; font-style: italic; }
-            </style>
-        </head>
-        <body>
-            <h2>Code Review Comments</h2>
-            ${comments.map(comment => `
-                <div class="comment ${comment.severity}">
-                    <div class="file">${comment.file}:${comment.line}</div>
-                    <div class="message">${comment.message}</div>
-                    ${comment.suggestion ? `<div class="suggestion">Suggestion: ${comment.suggestion}</div>` : ''}
-                </div>
-            `).join('')}
-        </body>
-        </html>
-    `;
-}
-function generatePRDescriptionHtml(description) {
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-                .section { margin-bottom: 20px; }
-                .section-title { font-weight: bold; margin-bottom: 10px; }
-                .reviewers, .labels { display: flex; gap: 5px; flex-wrap: wrap; }
-                .reviewer, .label { 
-                    padding: 5px 10px; 
-                    border-radius: 15px; 
-                    background-color: #e6f3ff;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="title">${description.title}</div>
-            <div class="section">
-                <div class="section-title">Description</div>
-                <div>${description.body}</div>
-            </div>
-            <div class="section">
-                <div class="section-title">Reviewers</div>
-                <div class="reviewers">
-                    ${description.reviewers.map(r => `<div class="reviewer">@${r}</div>`).join('')}
-                </div>
-            </div>
-            <div class="section">
-                <div class="section-title">Labels</div>
-                <div class="labels">
-                    ${description.labels.map(l => `<div class="label">${l}</div>`).join('')}
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
+        }));
+        // Create status bar item
+        const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+        statusBarItem.text = "$(symbol-misc) Claude Assistant";
+        statusBarItem.tooltip = "Click to show Claude Assistant commands";
+        statusBarItem.command = 'workbench.action.quickOpen';
+        statusBarItem.show();
+        context.subscriptions.push(statusBarItem);
+        vscode.window.showInformationMessage('Claude Assistant is now active!');
+    }
+    catch (error) {
+        vscode.window.showErrorMessage(`Failed to activate Claude Assistant: ${error}`);
+    }
 }
 function deactivate() { }
 //# sourceMappingURL=extension.js.map

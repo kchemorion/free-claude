@@ -1,96 +1,120 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { FileChangeRequest, CommandPermissionRequest } from '../types';
+import * as fs from 'fs/promises';
+
+export interface FileChangeRequest {
+    type: 'create' | 'modify' | 'delete';
+    path: string;
+    content?: string;
+}
+
+export interface CommandPermissionRequest {
+    command: string;
+    args: string[];
+    description: string;
+    severity: 'low' | 'medium' | 'high';
+}
 
 export class FileManager {
     constructor(private context: vscode.ExtensionContext) {}
 
-    public async handleFileRequest(request: FileChangeRequest): Promise<void> {
-        // Always ask for permission before making file changes
-        const approved = await this.requestPermission({
-            action: request.action,
-            path: request.path,
-            description: request.description
-        });
+    async handleFileChange(request: FileChangeRequest): Promise<void> {
+        try {
+            const change = {
+                type: request.type,
+                path: request.path,
+                content: request.content
+            };
 
-        if (!approved) {
-            throw new Error('File change request was denied by user');
-        }
+            await this.validateChange(change);
 
-        switch (request.action) {
-            case 'create':
-                await this.createFile(request.path, request.content || '');
-                break;
-            case 'edit':
-                await this.editFile(request.path, request.content || '');
-                break;
-            case 'delete':
-                await this.deleteFile(request.path);
-                break;
+            switch (request.type) {
+                case 'create':
+                    await this.createFile(change.path, change.content || '');
+                    break;
+                case 'modify':
+                    await this.modifyFile(change.path, change.content || '');
+                    break;
+                case 'delete':
+                    await this.deleteFile(change.path);
+                    break;
+                default:
+                    throw new Error(`Unsupported file change type: ${request.type}`);
+            }
+        } catch (error) {
+            throw new Error(`Failed to handle file change: ${error}`);
         }
     }
 
-    private async requestPermission(details: { action: string, path: string, description: string }): Promise<boolean> {
-        const message = `Claude wants to ${details.action} file: ${details.path}\n${details.description}`;
+    async requestCommandPermission(request: CommandPermissionRequest): Promise<boolean> {
+        const message = `Command: ${request.command} ${request.args.join(' ')}\n` +
+                       `Description: ${request.description}\n` +
+                       `Severity: ${request.severity}`;
+
         const response = await vscode.window.showWarningMessage(
             message,
             { modal: true },
             'Allow',
             'Deny'
         );
+
         return response === 'Allow';
     }
 
-    private async createFile(filePath: string, content: string): Promise<void> {
-        const uri = vscode.Uri.file(filePath);
-        const workspaceEdit = new vscode.WorkspaceEdit();
-        
-        // Create parent directories if they don't exist
-        await vscode.workspace.fs.createDirectory(
-            vscode.Uri.file(path.dirname(filePath))
-        );
+    private async validateChange(change: FileChangeRequest): Promise<void> {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (!workspaceRoot) {
+            throw new Error('No workspace folder found');
+        }
 
-        workspaceEdit.createFile(uri, { overwrite: true });
-        workspaceEdit.insert(uri, new vscode.Position(0, 0), content);
-        
-        await vscode.workspace.applyEdit(workspaceEdit);
+        const fullPath = path.join(workspaceRoot, change.path);
+        if (!fullPath.startsWith(workspaceRoot)) {
+            throw new Error('Invalid file path: Must be within workspace');
+        }
+
+        if (change.type === 'create' && await this.fileExists(fullPath)) {
+            const overwrite = await vscode.window.showWarningMessage(
+                `File ${change.path} already exists. Overwrite?`,
+                'Yes',
+                'No'
+            );
+            if (overwrite !== 'Yes') {
+                throw new Error('File creation cancelled: File already exists');
+            }
+        }
+
+        if ((change.type === 'modify' || change.type === 'delete') && !await this.fileExists(fullPath)) {
+            throw new Error(`File ${change.path} does not exist`);
+        }
     }
 
-    private async editFile(filePath: string, content: string): Promise<void> {
-        const document = await vscode.workspace.openTextDocument(filePath);
-        const workspaceEdit = new vscode.WorkspaceEdit();
-        
-        // Replace entire file content
-        const fullRange = new vscode.Range(
-            document.positionAt(0),
-            document.positionAt(document.getText().length)
-        );
-        
-        workspaceEdit.replace(document.uri, fullRange, content);
-        await vscode.workspace.applyEdit(workspaceEdit);
+    private async createFile(filePath: string, content: string): Promise<void> {
+        const dirPath = path.dirname(filePath);
+        await fs.mkdir(dirPath, { recursive: true });
+        await fs.writeFile(filePath, content);
+    }
+
+    private async modifyFile(filePath: string, content: string): Promise<void> {
+        await fs.writeFile(filePath, content);
     }
 
     private async deleteFile(filePath: string): Promise<void> {
-        const uri = vscode.Uri.file(filePath);
-        const workspaceEdit = new vscode.WorkspaceEdit();
-        workspaceEdit.deleteFile(uri, { recursive: true });
-        await vscode.workspace.applyEdit(workspaceEdit);
+        await fs.unlink(filePath);
+    }
+
+    private async fileExists(filePath: string): Promise<boolean> {
+        try {
+            await fs.access(filePath);
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     public async executeCommand(request: CommandPermissionRequest): Promise<void> {
         // Always ask for permission before executing commands
-        const message = `Claude wants to run command: ${request.command} ${request.args.join(' ')}\n` +
-                       `Description: ${request.description}\n` +
-                       `Risk Level: ${request.risk}`;
-        
-        const response = await vscode.window.showWarningMessage(
-            message,
-            { modal: true },
-            'Allow',
-            'Deny'
-        );
-
-        if (response !== 'Allow') {
+        const approved = await this.requestCommandPermission(request);
+        if (!approved) {
             throw new Error('Command execution was denied by user');
         }
 

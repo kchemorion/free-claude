@@ -1,7 +1,7 @@
 {
   "name": "claude-vscode",
-  "displayName": "Claude AI Assistant",
-  "description": "Advanced Claude AI integration for Visual Studio Code with file manipulation, code analysis, and intelligent assistance",
+  "displayName": "Claude Assistant",
+  "description": "AI-powered coding assistant powered by Claude",
   "version": "0.0.2",
   "publisher": "YourPublisherName",
   "private": true,
@@ -11,45 +11,63 @@
     "url": "https://github.com/yourusername/claude-vscode"
   },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.80.0"
   },
   "categories": [
-    "Programming Languages",
-    "Machine Learning",
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onCommand:claudeAssistant.generateCode",
+    "onCommand:claudeAssistant.generateTests",
+    "onCommand:claudeAssistant.suggestCommitMessage",
+    "onCommand:claudeAssistant.reviewChanges",
+    "onCommand:claudeAssistant.generatePRDescription",
+    "onCommand:claudeAssistant.generateDocumentation"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "claudeAssistant.generateCode",
+        "title": "Claude: Generate Code"
+      },
+      {
+        "command": "claudeAssistant.generateTests",
+        "title": "Claude: Generate Tests"
+      },
+      {
+        "command": "claudeAssistant.suggestCommitMessage",
+        "title": "Claude: Suggest Commit Message"
+      },
+      {
+        "command": "claudeAssistant.reviewChanges",
+        "title": "Claude: Review Changes"
+      },
+      {
+        "command": "claudeAssistant.generatePRDescription",
+        "title": "Claude: Generate PR Description"
+      },
+      {
+        "command": "claudeAssistant.generateDocumentation",
+        "title": "Claude: Generate Documentation"
+      }
+    ],
     "configuration": {
-      "title": "Claude AI Assistant",
+      "title": "Claude Assistant",
       "properties": {
         "claudeAssistant.apiKey": {
           "type": "string",
           "default": "",
-          "description": "API key for Claude AI"
+          "description": "Claude API Key"
         },
         "claudeAssistant.model": {
           "type": "string",
-          "default": "claude-2.1",
+          "default": "claude-2",
           "enum": [
-            "claude-2.1",
-            "claude-2.0",
-            "claude-instant"
+            "claude-2",
+            "claude-instant-1"
           ],
           "description": "Claude model to use"
-        },
-        "claudeAssistant.maxRetries": {
-          "type": "number",
-          "default": 3,
-          "description": "Maximum number of retries for failed API calls"
-        },
-        "claudeAssistant.timeout": {
-          "type": "number",
-          "default": 30000,
-          "description": "Timeout for API calls in milliseconds"
         }
       }
     },
@@ -73,40 +91,14 @@
         }
       ]
     },
-    "commands": [
-      {
-        "command": "claude.generateCode",
-        "title": "Generate Code with Claude AI"
-      },
-      {
-        "command": "claude.generateTests",
-        "title": "Generate Tests"
-      },
-      {
-        "command": "claude.suggestCommitMessage",
-        "title": "Suggest Commit Message"
-      },
-      {
-        "command": "claude.reviewChanges",
-        "title": "Review Code Changes"
-      },
-      {
-        "command": "claude.generatePRDescription",
-        "title": "Generate PR Description"
-      },
-      {
-        "command": "claude.generateDocumentation",
-        "title": "Generate Documentation"
-      }
-    ],
     "keybindings": [
       {
-        "command": "claude.generateCode",
+        "command": "claudeAssistant.generateCode",
         "key": "ctrl+shift+g",
         "mac": "cmd+shift+g"
       },
       {
-        "command": "claude.generateTests",
+        "command": "claudeAssistant.generateTests",
         "key": "ctrl+shift+t",
         "mac": "cmd+shift+t"
       }
@@ -114,55 +106,61 @@
     "menus": {
       "editor/context": [
         {
-          "command": "claude.generateCode",
+          "command": "claudeAssistant.generateCode",
           "group": "claudeAI@1"
         },
         {
-          "command": "claude.generateTests",
+          "command": "claudeAssistant.generateTests",
           "group": "claudeAI@2"
         },
         {
-          "command": "claude.generateDocumentation",
+          "command": "claudeAssistant.generateDocumentation",
           "group": "claudeAI@3"
         }
       ],
       "scm/title": [
         {
-          "command": "claude.suggestCommitMessage",
+          "command": "claudeAssistant.suggestCommitMessage",
           "group": "navigation"
         },
         {
-          "command": "claude.reviewChanges",
+          "command": "claudeAssistant.reviewChanges",
           "group": "navigation"
         }
       ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
-    "package": "vsce package",
-    "publish": "vsce publish"
+    "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
+    "@types/better-sqlite3": "^7.6.4",
+    "@types/marked": "^5.0.1",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.2.5",
-    "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^5.59.8",
-    "@typescript-eslint/parser": "^5.59.8",
-    "@vscode/test-electron": "^2.3.2",
-    "eslint": "^8.41.0",
-    "glob": "^8.1.0",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "@vscode/test-electron": "^2.3.3",
+    "eslint": "^8.45.0",
+    "glob": "^10.3.3",
     "mocha": "^10.2.0",
-    "typescript": "^5.1.3",
-    "vsce": "^2.15.0"
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "axios": "^1.4.0"
+    "axios": "^1.4.0",
+    "better-sqlite3": "^8.4.0",
+    "marked": "^5.1.1"
   }
 }
