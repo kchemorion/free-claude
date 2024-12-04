@@ -17,15 +17,29 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:claudeAssistant.generateCode",
-    "onCommand:claudeAssistant.generateTests",
-    "onCommand:claudeAssistant.suggestCommitMessage",
-    "onCommand:claudeAssistant.reviewChanges",
-    "onCommand:claudeAssistant.generatePRDescription",
-    "onCommand:claudeAssistant.generateDocumentation"
+    "onView:claudeAssistant.chatView"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claude-assistant",
+          "title": "Claude Assistant",
+          "icon": "media/claude-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "claude-assistant": [
+        {
+          "type": "webview",
+          "id": "claudeAssistant.chatView",
+          "name": "Chat",
+          "visibility": "visible"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "claudeAssistant.generateCode",
@@ -62,34 +76,13 @@
         },
         "claudeAssistant.model": {
           "type": "string",
-          "default": "claude-2",
+          "default": "claude-3-sonnet-20240229",
           "enum": [
-            "claude-2",
-            "claude-instant-1"
+            "claude-3-sonnet-20240229"
           ],
-          "description": "Claude model to use"
+          "description": "Claude model to use (currently using Claude 3.5 Sonnet)"
         }
       }
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "claude-sidebar",
-          "title": "Claude AI Assistant",
-          "icon": "media/claude-icon.svg"
-        }
-      ]
-    },
-    "views": {
-      "claude-sidebar": [
-        {
-          "type": "webview",
-          "id": "claude.chatView",
-          "name": "Chat",
-          "icon": "media/chat.svg",
-          "contextualTitle": "Claude AI Chat"
-        }
-      ]
     },
     "keybindings": [
       {

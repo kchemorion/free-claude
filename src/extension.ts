@@ -3,6 +3,7 @@ import { ClaudeAPI } from './api/claude';
 import { CodeGenerator } from './services/codeGenerator';
 import { GitIntegration } from './services/gitIntegration';
 import { DocumentationGenerator } from './services/documentationGenerator';
+import { SidebarProvider } from './webview/SidebarProvider';
 
 export async function activate(context: vscode.ExtensionContext) {
     try {
@@ -10,6 +11,15 @@ export async function activate(context: vscode.ExtensionContext) {
         const codeGenerator = new CodeGenerator(claudeAPI);
         const gitIntegration = new GitIntegration(claudeAPI);
         const documentationGenerator = new DocumentationGenerator(claudeAPI);
+
+        // Register sidebar provider
+        const sidebarProvider = new SidebarProvider(context.extensionUri, claudeAPI);
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(
+                SidebarProvider.viewType,
+                sidebarProvider
+            )
+        );
 
         // Register code generation commands
         context.subscriptions.push(
@@ -98,17 +108,10 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         );
 
-        // Create status bar item
-        const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-        statusBarItem.text = "$(symbol-misc) Claude Assistant";
-        statusBarItem.tooltip = "Click to show Claude Assistant commands";
-        statusBarItem.command = 'workbench.action.quickOpen';
-        statusBarItem.show();
-        context.subscriptions.push(statusBarItem);
-
-        vscode.window.showInformationMessage('Claude Assistant is now active!');
+        // Show welcome message
+        vscode.window.showInformationMessage('Claude Assistant is now active! Click the Claude icon in the activity bar to start chatting.');
     } catch (error) {
-        vscode.window.showErrorMessage(`Failed to activate Claude Assistant: ${error}`);
+        vscode.window.showErrorMessage(`Failed to activate extension: ${error}`);
     }
 }
 
