@@ -6,6 +6,7 @@ export interface FileChangeRequest {
     type: 'create' | 'modify' | 'delete';
     path: string;
     content?: string;
+    description: string;
 }
 
 export interface CommandPermissionRequest {
@@ -18,14 +19,34 @@ export interface CommandPermissionRequest {
 export class FileManager {
     constructor(private context: vscode.ExtensionContext) {}
 
+    async handleFileRequest(request: FileChangeRequest): Promise<void> {
+        const approved = await this.requestPermission({
+            action: request.type,
+            path: request.path,
+            description: request.description
+        });
+        
+        if (!approved) {
+            throw new Error('File operation was denied by user');
+        }
+
+        return this.handleFileChange(request);
+    }
+
+    private async requestPermission(details: { action: string, path: string, description: string }): Promise<boolean> {
+        const message = `Claude wants to ${details.action} file: ${details.path}\n${details.description}`;
+        const response = await vscode.window.showWarningMessage(message, { modal: true }, 'Allow', 'Deny');
+        return response === 'Allow';
+    }
+
     async handleFileChange(request: FileChangeRequest): Promise<void> {
         try {
-            const change = {
+            const change: FileChangeRequest = {
                 type: request.type,
                 path: request.path,
-                content: request.content
+                content: request.content,
+                description: request.description
             };
-
             await this.validateChange(change);
 
             switch (request.type) {
@@ -48,8 +69,8 @@ export class FileManager {
 
     async requestCommandPermission(request: CommandPermissionRequest): Promise<boolean> {
         const message = `Command: ${request.command} ${request.args.join(' ')}\n` +
-                       `Description: ${request.description}\n` +
-                       `Severity: ${request.severity}`;
+                     `Description: ${request.description}\n` +
+                     `Severity: ${request.severity}`;
 
         const response = await vscode.window.showWarningMessage(
             message,
@@ -112,13 +133,11 @@ export class FileManager {
     }
 
     public async executeCommand(request: CommandPermissionRequest): Promise<void> {
-        // Always ask for permission before executing commands
         const approved = await this.requestCommandPermission(request);
         if (!approved) {
             throw new Error('Command execution was denied by user');
         }
 
-        // Execute the command
         const terminal = vscode.window.createTerminal('Claude Assistant');
         terminal.show();
         terminal.sendText(`${request.command} ${request.args.join(' ')}`);

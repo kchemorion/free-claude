@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ClaudeAPI } from '../api/claude';
+import { FileManager } from '../services/fileManager';
 import { marked } from 'marked';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -8,7 +9,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     constructor(
         private readonly extensionUri: vscode.Uri,
-        private readonly claudeAPI: ClaudeAPI
+        private readonly claudeAPI: ClaudeAPI,
+        private readonly fileManager: FileManager
     ) {}
 
     public resolveWebviewView(
@@ -20,9 +22,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [
-                this.extensionUri
-            ]
+            localResourceRoots: [this.extensionUri]
         };
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -40,6 +40,36 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         webviewView.webview.postMessage({
                             command: 'error',
                             text: `Error: ${error}`
+                        });
+                    }
+                    break;
+                }
+                case 'fileOperation': {
+                    try {
+                        await this.fileManager.handleFileRequest(data.request);
+                        webviewView.webview.postMessage({
+                            command: 'fileOperationResult',
+                            success: true
+                        });
+                    } catch (error) {
+                        webviewView.webview.postMessage({
+                            command: 'error',
+                            text: `File operation failed: ${error}`
+                        });
+                    }
+                    break;
+                }
+                case 'executeCommand': {
+                    try {
+                        await this.fileManager.executeCommand(data.request);
+                        webviewView.webview.postMessage({
+                            command: 'commandResult',
+                            success: true
+                        });
+                    } catch (error) {
+                        webviewView.webview.postMessage({
+                            command: 'error',
+                            text: `Command execution failed: ${error}`
                         });
                     }
                     break;
@@ -82,6 +112,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     .assistant-message {
                         background-color: var(--vscode-editor-selectionBackground);
                     }
+                    #chat-container {
+                        margin-bottom: 80px;
+                        overflow-y: auto;
+                        max-height: calc(100vh - 120px);
+                    }
                     #input-container {
                         position: fixed;
                         bottom: 20px;
@@ -89,6 +124,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         right: 20px;
                         display: flex;
                         gap: 10px;
+                        background: var(--vscode-editor-background);
+                        padding: 10px;
+                        border-top: 1px solid var(--vscode-input-border);
                     }
                     #message-input {
                         flex-grow: 1;
@@ -98,7 +136,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         color: var(--vscode-input-foreground);
                         border-radius: 4px;
                     }
-                    #send-button {
+                    button {
                         padding: 8px 16px;
                         background-color: var(--vscode-button-background);
                         color: var(--vscode-button-foreground);
@@ -106,7 +144,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         border-radius: 4px;
                         cursor: pointer;
                     }
-                    #send-button:hover {
+                    button:hover {
                         background-color: var(--vscode-button-hoverBackground);
                     }
                     pre {
@@ -117,9 +155,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     }
                     code {
                         font-family: var(--vscode-editor-font-family);
-                    }
-                    #chat-container {
-                        margin-bottom: 80px;
                     }
                 </style>
             </head>
@@ -134,6 +169,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     const chatContainer = document.getElementById('chat-container');
                     const messageInput = document.getElementById('message-input');
                     const sendButton = document.getElementById('send-button');
+
+                    // Handle file operations
+                    window.handleFileOperation = async (request) => {
+                        vscode.postMessage({
+                            command: 'fileOperation',
+                            request: request
+                        });
+                    };
+
+                    // Handle command execution
+                    window.executeCommand = async (request) => {
+                        vscode.postMessage({
+                            command: 'executeCommand',
+                            request: request
+                        });
+                    };
 
                     function addMessage(text, isUser = false) {
                         const messageDiv = document.createElement('div');
@@ -167,6 +218,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         switch (message.command) {
                             case 'receiveMessage':
                                 addMessage(message.text);
+                                break;
+                            case 'fileOperationResult':
+                                addMessage(\`File operation \${message.success ? 'succeeded' : 'failed'}\`);
+                                break;
+                            case 'commandResult':
+                                addMessage(\`Command execution \${message.success ? 'succeeded' : 'failed'}\`);
                                 break;
                             case 'error':
                                 addMessage(\`Error: \${message.text}\`);

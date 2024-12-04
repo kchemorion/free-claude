@@ -4,16 +4,18 @@ import { CodeGenerator } from './services/codeGenerator';
 import { GitIntegration } from './services/gitIntegration';
 import { DocumentationGenerator } from './services/documentationGenerator';
 import { SidebarProvider } from './webview/SidebarProvider';
+import { FileManager } from './services/fileManager';
 
 export async function activate(context: vscode.ExtensionContext) {
     try {
+        const fileManager = new FileManager(context);
         const claudeAPI = new ClaudeAPI();
         const codeGenerator = new CodeGenerator(claudeAPI);
         const gitIntegration = new GitIntegration(claudeAPI);
         const documentationGenerator = new DocumentationGenerator(claudeAPI);
 
         // Register views
-        const sidebarProvider = new SidebarProvider(context.extensionUri, claudeAPI);
+        const sidebarProvider = new SidebarProvider(context.extensionUri, claudeAPI, fileManager);
         context.subscriptions.push(
             vscode.window.registerWebviewViewProvider(
                 SidebarProvider.viewType,
@@ -21,7 +23,6 @@ export async function activate(context: vscode.ExtensionContext) {
             )
         );
 
-        // Register commands
         // Register commands
         context.subscriptions.push(
             vscode.commands.registerCommand('claudeAssistant.generateCode', async () => {
