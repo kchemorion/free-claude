@@ -29,9 +29,48 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.onDidReceiveMessage(async (data) => {
             switch (data.command) {
+                // In the message handler section:
                 case 'sendMessage': {
                     try {
                         const response = await this.claudeAPI.sendMessage(data.text);
+                        
+                        // Handle file operations
+                        if (response.parsed.fileOperations.length > 0) {
+                            const shouldExecute = await vscode.window.showWarningMessage(
+                                'Claude wants to create/modify files. Allow?',
+                                'Yes', 'No'
+                            );
+                            
+                            if (shouldExecute === 'Yes') {
+                                for (const operation of response.parsed.fileOperations) {
+                                    await this.fileManager.handleFileRequest(operation);
+                                }
+                            }
+                        }
+
+                        // Handle command execution for shell/bash blocks
+                        const shellCommands = response.parsed.codeBlocks.filter(
+                            block => ['bash', 'shell', 'sh'].includes(block.language.toLowerCase())
+                        );
+
+                        if (shellCommands.length > 0) {
+                            const shouldExecute = await vscode.window.showWarningMessage(
+                                'Claude wants to execute shell commands. Allow?',
+                                'Yes', 'No'
+                            );
+
+                            if (shouldExecute === 'Yes') {
+                                for (const command of shellCommands) {
+                                    await this.fileManager.executeCommand({
+                                        command: command.code,
+                                        args: [],
+                                        description: 'Execute shell command from Claude',
+                                        severity: 'medium'
+                                    });
+                                }
+                            }
+                        }
+
                         webviewView.webview.postMessage({
                             command: 'receiveMessage',
                             text: this.formatMarkdown(response.content)

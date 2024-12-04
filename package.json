@@ -74,7 +74,7 @@
           "default": "",
           "description": "API key for Claude AI"
         },
-        "claude.model": {
+        "claudeAssistant.model": {
           "type": "string",
           "default": "claude-3-sonnet-20240229",
           "enum": [
@@ -92,6 +92,35 @@
             "Legacy model"
           ],
           "description": "Claude model to use for responses"
+        },
+        "claudeAssistant.autoExecuteCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically execute shell commands from code blocks (use with caution)"
+        },
+        "claudeAssistant.autoCreateFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically create files from code blocks"
+        },
+        "claudeAssistant.defaultFileLocation": {
+          "type": "string",
+          "default": "",
+          "description": "Default location for created files (relative to workspace root)"
+        },
+        "claudeAssistant.fileTypes": {
+          "type": "object",
+          "default": {
+            "javascript": ".js",
+            "typescript": ".ts",
+            "python": ".py",
+            "java": ".java",
+            "html": ".html",
+            "css": ".css",
+            "jsx": ".jsx",
+            "tsx": ".tsx"
+          },
+          "description": "File extensions to use for different languages"
         }
       }
     },
