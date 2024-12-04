@@ -37,7 +37,7 @@ A powerful VS Code extension that integrates Claude AI directly into your develo
 ## Configuration
 
 - `claude.apiKey`: Your Claude API key
-- `claude.model`: Claude model to use (claude-2.1, claude-2.0, claude-instant)
+- `claude.model`: Claude model to use (claude-3-5-sonnet-20240229.1, claude-3-5-sonnet-20240229.0, claude-instant)
 - `claude.maxRetries`: Maximum number of API call retries
 - `claude.timeout`: API call timeout in milliseconds
 
