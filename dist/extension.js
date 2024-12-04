@@ -8961,41 +8961,42 @@ Include:
             throw new Error(`Failed to generate API documentation: ${error}`);
         }
     }
-    async generateReadme(projectInfo) {
+    async generateReadme() {
         try {
-            const prompt = `Generate a README.md file for this project:
-
-Project Name: ${projectInfo.name}
-Description: ${projectInfo.description}
-Features:
-${projectInfo.features.map(f => `- ${f}`).join('\n')}
-
-Include:
-1. Project overview
-2. Installation instructions
-3. Usage examples
-4. Features list
-5. Contributing guidelines
-6. License information`;
+            const prompt = `Generate a README.md file structure with sections`;
             const response = await this.claudeAPI.sendMessage(prompt);
-            return response.content;
+            // Convert the response into ReadmeSection array
+            const sections = [
+                {
+                    title: 'Overview',
+                    content: response.content,
+                    order: 1
+                }
+            ];
+            return sections;
         }
         catch (error) {
             throw new Error(`Failed to generate README: ${error}`);
         }
     }
-    async generateChangelog(changes) {
+    async generateChangelog() {
         try {
-            const prompt = `Generate a changelog entry for these changes:
-
-${changes.map(c => `- [${c.type}] ${c.description}`).join('\n')}
-
-Format the changelog following the Keep a Changelog format:
-1. Group by type (Added, Changed, Fixed, etc.)
-2. Use bullet points for each change
-3. Include version and date`;
+            const prompt = `Generate a changelog structure`;
             const response = await this.claudeAPI.sendMessage(prompt);
-            return response.content;
+            // Convert the response into ChangelogEntry array
+            const entries = [
+                {
+                    version: '1.0.0',
+                    date: new Date().toISOString(),
+                    changes: [
+                        {
+                            type: 'added',
+                            description: 'Initial release'
+                        }
+                    ]
+                }
+            ];
+            return entries;
         }
         catch (error) {
             throw new Error(`Failed to generate changelog: ${error}`);

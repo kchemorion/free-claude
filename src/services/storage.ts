@@ -1,9 +1,20 @@
 import * as vscode from 'vscode';
-import { Database } from 'better-sqlite3';
+import BetterSqlite3, { Database } from 'better-sqlite3';
 import * as path from 'path';
 
 interface StorageOptions {
     filename: string;
+}
+
+interface ConversationRecord {
+    id: number;
+    content: string;
+    timestamp: string;
+}
+
+interface SettingRecord {
+    key: string;
+    value: string;
 }
 
 export class Storage {
@@ -11,7 +22,7 @@ export class Storage {
 
     constructor(private context: vscode.ExtensionContext, options: StorageOptions) {
         const dbPath = path.join(context.globalStorageUri.fsPath, options.filename);
-        this.db = new Database(dbPath);
+        this.db = new BetterSqlite3(dbPath);
         this.initialize();
     }
 
@@ -22,7 +33,6 @@ export class Storage {
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 content TEXT NOT NULL
             );
-
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
@@ -38,15 +48,15 @@ export class Storage {
 
     async getConversation(id: number): Promise<string | null> {
         const stmt = this.db.prepare('SELECT content FROM conversations WHERE id = ?');
-        const result = stmt.get(id);
+        const result = stmt.get(id) as ConversationRecord | undefined;
         return result ? result.content : null;
     }
 
-    async getRecentConversations(limit: number = 10): Promise<Array<{ id: number; content: string; timestamp: string }>> {
+    async getRecentConversations(limit: number = 10): Promise<ConversationRecord[]> {
         const stmt = this.db.prepare(
             'SELECT id, content, timestamp FROM conversations ORDER BY timestamp DESC LIMIT ?'
         );
-        return stmt.all(limit);
+        return stmt.all(limit) as ConversationRecord[];
     }
 
     async setSetting(key: string, value: string): Promise<void> {
@@ -58,7 +68,7 @@ export class Storage {
 
     async getSetting(key: string): Promise<string | null> {
         const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
-        const result = stmt.get(key);
+        const result = stmt.get(key) as SettingRecord | undefined;
         return result ? result.value : null;
     }
 
