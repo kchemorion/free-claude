@@ -9,12 +9,11 @@ interface ClaudeResponse {
 export class ClaudeAPI {
     private readonly apiKey: string;
     private readonly baseURL: string = 'https://api.anthropic.com/v1';
-    private readonly model: string;
+    private readonly model: string = 'claude-3-sonnet-20240229';
 
     constructor() {
         const config = vscode.workspace.getConfiguration('claudeAssistant');
         this.apiKey = config.get('apiKey') || '';
-        this.model = config.get('model') || 'claude-3-5-sonnet-20240229';
 
         if (!this.apiKey) {
             throw new Error('Claude API key not configured. Please set claudeAssistant.apiKey in settings.');

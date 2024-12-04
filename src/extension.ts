@@ -7,24 +7,49 @@ import { SidebarProvider } from './webview/SidebarProvider';
 
 export async function activate(context: vscode.ExtensionContext) {
     try {
-        const config = vscode.workspace.getConfiguration('claude');
-        const model = config.get('model') || 'claude-3-sonnet-20240229';
-        const isClaudeThree = model.startsWith('claude-3');
+        const claudeAPI = new ClaudeAPI();
+        const codeGenerator = new CodeGenerator(claudeAPI);
+        const gitIntegration = new GitIntegration(claudeAPI);
+        const documentationGenerator = new DocumentationGenerator(claudeAPI);
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': isClaudeThree ? '2024-02-29' : '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: isClaudeThree ? 4096 : 1000,
-                messages: [{
-                    role: 'user',
-                    content: question
-                }]
+        // Register views
+        const sidebarProvider = new SidebarProvider(context.extensionUri, claudeAPI);
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(
+                SidebarProvider.viewType,
+                sidebarProvider
+            )
+        );
+
+        // Register commands
+        // Register commands
+        context.subscriptions.push(
+            vscode.commands.registerCommand('claudeAssistant.generateCode', async () => {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    await codeGenerator.generateCode('', editor.document.languageId);
+                }
+            }),
+            vscode.commands.registerCommand('claudeAssistant.generateTests', async () => {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    await codeGenerator.generateTests(editor.document);
+                }
+            }),
+            vscode.commands.registerCommand('claudeAssistant.suggestCommitMessage', async () => {
+                await gitIntegration.suggestCommitMessage();
+            }),
+            vscode.commands.registerCommand('claudeAssistant.reviewChanges', async () => {
+                await gitIntegration.reviewChanges();
+            }),
+            vscode.commands.registerCommand('claudeAssistant.generatePRDescription', async () => {
+                await gitIntegration.generatePRDescription();
+            }),
+            vscode.commands.registerCommand('claudeAssistant.generateDocumentation', async () => {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    await documentationGenerator.generateDocumentation(editor.document);
+                }
             })
         );
 
