@@ -1,43 +1,87 @@
-# Claude for VS Code
+# Claude AI Assistant for VS Code
 
-A Visual Studio Code extension that integrates Claude AI into your development environment.
+A powerful VS Code extension that integrates Claude AI directly into your development environment, providing intelligent code assistance, analysis, and chat capabilities.
 
 ## Features
 
-- Ask Claude questions directly from VS Code
-- View responses in a beautiful, formatted webview
-- Secure API key management through VS Code settings
+- 🤖 **Intelligent Chat Interface**: Chat with Claude directly from VS Code's sidebar
+- 📝 **Context-Aware Code Understanding**: Claude understands your current code context
+- 🔍 **Code Analysis**: Get detailed analysis of your code with a single click
+- 💡 **Smart Suggestions**: Receive intelligent code improvement suggestions
+- 🛠️ **File Operations**: Claude can help create, edit, and manage files (with your permission)
+- 📋 **Command Execution**: Run commands safely through Claude (with your permission)
+- 💾 **Persistent Chat History**: Your conversations are saved for future reference
+- ✨ **Markdown Support**: Rich text formatting with syntax highlighting
 
-## Installation
+## Commands
 
-1. Install the extension from the VS Code marketplace
-2. Get your Claude API key from [Anthropic](https://www.anthropic.com/)
-3. Set your API key in VS Code settings:
-   - Open Command Palette (Ctrl+Shift+P)
-   - Type "Settings"
-   - Select "Preferences: Open Settings (UI)"
-   - Search for "Claude"
-   - Enter your API key in the "Claude: API Key" field
-
-## Usage
-
-1. Open the Command Palette (Ctrl+Shift+P)
-2. Type "Ask Claude" and select the command
-3. Enter your question in the input box
-4. View Claude's response in the webview panel
+- `Claude: Open Chat` - Opens the Claude chat interface
+- `Claude: Analyze Code` - Analyzes the current file
+- `Claude: Explain Code` - Explains the selected code
+- `Claude: Suggest Improvements` - Suggests improvements for selected code
+- `Claude: Clear History` - Clears the current chat history
 
 ## Requirements
 
-- Visual Studio Code version 1.85.0 or higher
-- A valid Claude API key from Anthropic
+- VS Code version 1.85.0 or higher
+- Claude API key from Anthropic
+
+## Setup
+
+1. Install the extension
+2. Open VS Code settings
+3. Search for "Claude"
+4. Enter your Claude API key
+5. Optional: Configure other settings like model type and timeout
+
+## Configuration
+
+- `claude.apiKey`: Your Claude API key
+- `claude.model`: Claude model to use (claude-3-5-sonnet-20240229.1, claude-3-5-sonnet-20240229.0, claude-instant)
+- `claude.maxRetries`: Maximum number of API call retries
+- `claude.timeout`: API call timeout in milliseconds
+
+## Security
+
+- All file operations require explicit user permission
+- Command execution requires user approval
+- API key is stored securely in VS Code's secret storage
 
 ## Development
 
+### Prerequisites
+
+- Node.js 14.x or higher
+- npm or yarn
+
+### Building
+
 1. Clone the repository
-2. Run `npm install`
-3. Open in VS Code
-4. Press F5 to start debugging
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Build the extension:
+   ```bash
+   npm run compile
+   ```
+
+### Testing
+
+Run the tests:
+```bash
+npm test
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
 MIT
+
+## Acknowledgments
+
+- Thanks to Anthropic for the Claude AI API
+- Icons from VS Code's icon set
