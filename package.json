@@ -67,6 +67,25 @@
           "type": "string",
           "default": "",
           "description": "API key for Claude AI"
+        },
+        "claude.model": {
+          "type": "string",
+          "default": "claude-3-sonnet-20240229",
+          "enum": [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240229",
+            "claude-2.1",
+            "claude-2"
+          ],
+          "enumDescriptions": [
+            "Most capable model (Claude 3 Opus)",
+            "Balanced model (Claude 3 Sonnet)",
+            "Fastest model (Claude 3 Haiku)",
+            "Previous generation, good for most tasks",
+            "Legacy model"
+          ],
+          "description": "Claude model to use for responses"
         }
       }
     }

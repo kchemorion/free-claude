@@ -65,16 +65,20 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function askClaude(question: string, apiKey: string): Promise<ClaudeResponse> {
     try {
+        const config = vscode.workspace.getConfiguration('claude');
+        const model = config.get('model') || 'claude-3-sonnet-20240229';
+        const isClaudeThree = model.startsWith('claude-3');
+
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
+                'anthropic-version': isClaudeThree ? '2024-02-29' : '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-2',
-                max_tokens: 1000,
+                model: model,
+                max_tokens: isClaudeThree ? 4096 : 1000,
                 messages: [{
                     role: 'user',
                     content: question
