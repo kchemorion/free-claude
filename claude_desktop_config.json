@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vscode-agent": {
+      "command": "code",
+      "args": ["--extensionDevelopmentPath=/home/blvksh33p/Documents/free-claude"]
+    }
+  }
+}

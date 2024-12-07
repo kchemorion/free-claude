@@ -27,16 +27,96 @@ export interface ClaudeResponse {
 }
 
 export class ClaudeAPI {
-    private readonly apiKey: string;
+    private apiKey: string | undefined;
     private readonly baseURL: string = 'https://api.anthropic.com/v1';
     private readonly model: string = 'claude-3-sonnet-20240229';
 
     constructor() {
+        this.loadApiKey();
+    }
+
+    private loadApiKey() {
         const config = vscode.workspace.getConfiguration('claudeAssistant');
-        this.apiKey = config.get('apiKey') || '';
-        
+        this.apiKey = config.get('apiKey');
+    }
+
+    private async ensureApiKey(): Promise<boolean> {
         if (!this.apiKey) {
-            throw new Error('Claude API key not configured. Please set claudeAssistant.apiKey in settings.');
+            const response = await vscode.window.showErrorMessage(
+                'Claude API key not configured. Would you like to configure it now?',
+                'Yes',
+                'No'
+            );
+
+            if (response === 'Yes') {
+                const key = await vscode.window.showInputBox({
+                    prompt: 'Enter your Claude API key',
+                    password: true
+                });
+
+                if (key) {
+                    await vscode.workspace.getConfiguration('claudeAssistant').update('apiKey', key, true);
+                    this.apiKey = key;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    async sendMessage(message: string): Promise<ClaudeResponse> {
+        try {
+            if (!await this.ensureApiKey()) {
+                return {
+                    content: "⚠️ Claude API key not configured. Please configure the API key to continue.",
+                    parsed: { text: "", codeBlocks: [], fileOperations: [] }
+                };
+            }
+
+            const response = await axios.post(
+                `${this.baseURL}/messages`,
+                {
+                    model: this.model,
+                    max_tokens: 4096,
+                    messages: [{
+                        role: "user",
+                        content: message
+                    }]
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': this.apiKey,
+                        'anthropic-version': '2023-06-01'
+                    }
+                }
+            );
+
+            const content = response.data.content[0].text;
+            return {
+                content,
+                parsed: this.parseResponse(content)
+            };
+        } catch (error: any) {
+            console.error('Claude API error:', error);
+            let errorMessage = 'Failed to communicate with Claude API. ';
+            
+            if (error.response?.status === 401) {
+                errorMessage += 'Invalid API key. Please check your API key configuration.';
+                // Clear invalid API key
+                await vscode.workspace.getConfiguration('claudeAssistant').update('apiKey', undefined, true);
+                this.apiKey = undefined;
+            } else {
+                errorMessage += error.message || 'Unknown error occurred.';
+            }
+
+            return {
+                content: `⚠️ ${errorMessage}`,
+                parsed: { text: "", codeBlocks: [], fileOperations: [] },
+                error: errorMessage
+            };
         }
     }
 
@@ -49,92 +129,14 @@ export class ClaudeAPI {
         while ((match = codeBlockRegex.exec(content)) !== null) {
             const language = match[1]?.toLowerCase() || 'text';
             const code = match[2].trim();
-            const fileName = this.inferFileName(language, code);
             
-            codeBlocks.push({ language, code, fileName });
-            
-            // Create file operation for code blocks that should become files
-            if (fileName && this.shouldCreateFile(language)) {
-                fileOperations.push({
-                    type: 'create',
-                    path: fileName,
-                    content: code,
-                    description: `Create ${language} file from code block`
-                });
-            }
+            codeBlocks.push({ language, code });
         }
 
         return {
-            text: content,
+            text: content.replace(codeBlockRegex, '').trim(),
             codeBlocks,
             fileOperations
         };
-    }
-
-    private shouldCreateFile(language: string): boolean {
-        const fileLanguages = ['javascript', 'typescript', 'python', 'java', 'html', 'css', 'jsx', 'tsx'];
-        return fileLanguages.includes(language.toLowerCase());
-    }
-
-    private inferFileName(language: string, code: string): string | undefined {
-        const extensionMap: Record<string, string> = {
-            javascript: '.js',
-            typescript: '.ts',
-            python: '.py',
-            java: '.java',
-            html: '.html',
-            css: '.css',
-            jsx: '.jsx',
-            tsx: '.tsx'
-        };
-
-        const ext = extensionMap[language.toLowerCase()];
-        if (!ext) return undefined;
-
-        // Try to infer name from code content
-        let fileName = 'new_file';
-        
-        if (language === 'javascript' || language === 'typescript') {
-            const classMatch = code.match(/class\s+(\w+)/);
-            const componentMatch = code.match(/function\s+(\w+)/);
-            if (classMatch) fileName = classMatch[1];
-            else if (componentMatch) fileName = componentMatch[1];
-        }
-
-        return `${fileName}${ext}`;
-    }
-
-    async sendMessage(prompt: string): Promise<ClaudeResponse> {
-        try {
-            const response = await axios.post(
-                `${this.baseURL}/messages`,
-                {
-                    model: this.model,
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 4000
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': this.apiKey,
-                        'anthropic-version': '2023-06-01'
-                    }
-                }
-            );
-
-            const content = response.data.content[0].text;
-            const parsed = this.parseResponse(content);
-
-            return {
-                content,
-                parsed
-            };
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const message = error.response?.data?.error?.message || error.message;
-                throw new Error(`Claude API error: ${message}`);
-            }
-            throw error;
-        }
     }
 }
